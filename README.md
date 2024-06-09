@@ -1,7 +1,7 @@
 # mnemonic-splitter-bip39
 A simple passphrase splitter for BIP39
 
-This code will split a bip39 (24 word only) passphrase into 2 or more passphrases (24 words).
+This code will split a bip39 (english and 24 word only) passphrase into 2 or more passphrases (24 words).
 
 It is usefull if you don't want to keep the backup in a single location (meaning if compromised you will lost access to your wallet). It can also fool anyone trying to get your passphrase by threat as you can give him access to any of those generated passphrases.
 
