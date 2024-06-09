@@ -15,3 +15,4 @@ merge.py : provide the list of splitted passphrases and run it to get original p
 
 test.*.py : test files for DEV
 
+Technical details : generated passphrases entropy is set using the secrets (generating random secure numbers) python library, the adding of the entropy of generated passphrases (modulus 2**256) will give the original entropy. 
