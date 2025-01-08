@@ -1,27 +1,12 @@
-#from og_log import LOG
-
-import hashlib
-import secrets
 from typing import Tuple
+import hashlib,secrets
 
-def validate_kwargs(kwarg_profile):          # list of expected profiles for kwargs
-    def decorator(fct):
-        def inner(*args,**kwargs):
-            if 'mandatory' in kwarg_profile and kwarg_profile['mandatory'] is not None:
-                for item in kwarg_profile['mandatory']:
-                    if item not in kwargs.keys(): raise Exception("Missing mandatory argument : "+str(item))
-            if 'exclusive' in kwarg_profile and kwarg_profile['exclusive'] is not None:
-                found = None
-                for item in kwarg_profile['exclusive']:
-                    if set(item) <= set(kwargs.keys()):
-                        if found is not None: raise Exception("Exclusive arguments conflict : "+str(item)+" and "+str(found))
-                        found = item
-            return fct(*args,**kwargs)
-        return inner
-    return decorator
+from og_log import LOG
 
-def verify_wordlist(*words: str) -> Tuple[str, ...]:
-    """Verifies that the words given in this source file match the English wordlist specified in BIP39.
+from src.tools import validate_kwargs
+
+def _verify_wordlist(*words: str) -> Tuple[str, ...]:
+    """Verifies that the words given in this source file match the English wordlist specified in BIP39
     The SHA256 hash below is derived from the original wordlist at:
     https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt
     """
@@ -32,16 +17,24 @@ def verify_wordlist(*words: str) -> Tuple[str, ...]:
     )
     return words
 
-def calculate_checksum(integer):
-    #LOG.debug("calculate_checksum : Checksum : "+hex(integer))
-    byte_string = integer.to_bytes((integer.bit_length() + 7) // 8, byteorder='big')
-    sha256_hash = hashlib.sha256(byte_string).hexdigest()
-    #LOG.debug("calculate_checksum : hash : "+sha256_hash+" : filtered hash : "+bin(int(sha256_hash[:2],16)))
-    return int(sha256_hash[:2],16)
+def generate_random_private_key():
+    return secrets.randbelow(Bip39Secret.SECP256k1_ORDER-1)+1
 
-class Bip39Splitter:
+class Bip39Secret():
 
-    MNEMONICS: Tuple[str, ...] = verify_wordlist(
+    MNEMONIC_VALID_LENGTHS = [ 24 ]
+    SECP256k1_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
+    @staticmethod
+    def _calculate_checksum(integer):
+        #LOG.debug("calculate_checksum : Checksum : "+hex(integer))
+        byte_string = integer.to_bytes((integer.bit_length() + 7) // 8, byteorder='big')
+        sha256_hash = hashlib.sha256(byte_string).hexdigest()
+        #LOG.debug("calculate_checksum : hash : "+sha256_hash+" : filtered hash : "+bin(int(sha256_hash[:2],16)))
+        return int(sha256_hash[:2],16)
+
+
+    BIP39_MNEMONICS: Tuple[str, ...] = _verify_wordlist(
         "abandon",  "ability",  "able",     "about",    "above",    "absent",   "absorb",   "abstract", 
         "absurd",   "abuse",    "access",   "accident", "account",  "accuse",   "achieve",  "acid",     
         "acoustic", "acquire",  "across",   "act",      "action",   "actor",    "actress",  "actual",   
@@ -300,31 +293,27 @@ class Bip39Splitter:
         "yellow",   "you",      "young",    "youth",    "zebra",    "zero",     "zone",     "zoo",  
     )    
 
-    @validate_kwargs({ 'exclusive' : [ 'mnemonic','key','mnemonic_list'] })
-    def __init__(self, **kwargs):
-        if 'mnemonic' in kwargs: self._init_from_mnemonic(kwargs.pop('mnemonic'))
-        elif 'mnemonic_list' in kwargs: self._init_from_mnemonic_list(kwargs.pop('mnemonic_list'))
-        elif 'key' in kwargs: self._init_from_key(kwargs.pop('key'))
-
     @property
     def mnemonic(self):
-        return self._mnemonic
+        s = self._mnemonic.split(" ")
+        if len(s) in Bip39Secret.MNEMONIC_VALID_LENGTHS: return self._mnemonic
+        raise Exception("ERROR: Wrong mnemonic length : "+str(self._mnemonic))
 
     @property
     def key(self):
-        return self._key
+        return self._key    
     
-    def _init_from_mnemonic_list(self,mnemonic_list):
-        key = 0x0
-        for item in mnemonic_list:
-            key += Bip39Splitter(mnemonic=item).key
-            key = key % 2**256
-        self._init_from_key(key)
+    @validate_kwargs({ 'exclusive' : [ 'mnemonic','key' ] })
+    def __init__(self, **kwargs):
+        if 'mnemonic' in kwargs: self._init_from_mnemonic(kwargs.pop('mnemonic'))
+        elif 'key' in kwargs: self._init_from_key(kwargs.pop('key'))
+        else: raise Exception("ERROR: Wrong parameters : "+str(kwargs))
 
     def _init_from_mnemonic(self,mnemonic):
-
+        if len(mnemonic.split(" ")) not in Bip39Secret.MNEMONIC_VALID_LENGTHS: raise Exception("ERROR: Wrong mnemonic length : "+str(mnemonic))
         B = ""
-        for word in mnemonic.split(" "): B += f"{Bip39Splitter.MNEMONICS.index(word):#0{13}b}"[2:]
+
+        for word in mnemonic.split(" "): B += f"{Bip39Secret.BIP39_MNEMONICS.index(word):#0{13}b}"[2:]
         if len(B) != 264: raise Exception("ERROR: Wrong length : "+str(len(B)))
 
         P = "0b"
@@ -332,46 +321,65 @@ class Bip39Splitter:
         C = "0b"+B[256:264]
         P = int(P, 2)
         C = int(C, 2)
-        if calculate_checksum(P) != C: raise Exception("ERROR: Wrong checksum")
+        if Bip39Secret._calculate_checksum(P) != C: raise Exception("ERROR: Wrong checksum")
 
         self._mnemonic = mnemonic
         self._key = P
-        #LOG.info("Init from mnemonic : "+self.mnemonic+", key : "+hex(self.key))
+        LOG.debug("Init from mnemonic : "+self.mnemonic+", key : "+hex(self.key))        
 
     def _init_from_key(self,key):
-        if key < 1 and key > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140: raise Exception("ERROR: Wrong key : "+hex(key))
+        if key < 1 and key > Bip39Secret.SECP256k1_ORDER-1: raise Exception("ERROR: Wrong key : "+hex(key))
         self._key = key
         binary_string = bin(self.key)[2:].zfill(256)
-
-        #LOG.debug(binary_string+" : length : "+str(len(binary_string)))
 
         mnemonic = ""
         for i in range(0,23):
             s = binary_string[i*11:i*11+11]
-            #LOG.debug(str(i) + " : " + str(s) + " : " + str(int(s,2)) + " : " + str(Bip39Splitter.MNEMONICS[int(s,2)]))
-            mnemonic += Bip39Splitter.MNEMONICS[int(s,2)] + " "
+            LOG.debug(str(i) + " : " + str(s) + " : " + str(int(s,2)) + " : " + str(Bip39Secret.BIP39_MNEMONICS[int(s,2)]))
+            mnemonic += Bip39Secret.BIP39_MNEMONICS[int(s,2)] + " "
 
-        s = binary_string[253:256]+bin(calculate_checksum(self.key))[2:].zfill(8)
-        #LOG.debug("23 : " + str(s) + " : " + str(int(s,2)) + " : " + str(Bip39Splitter.MNEMONICS[int(s,2)]))
+        s = binary_string[253:256]+bin(Bip39Secret._calculate_checksum(self.key))[2:].zfill(8)
+        LOG.debug("23 : " + str(s) + " : " + str(int(s,2)) + " : " + str(Bip39Secret.BIP39_MNEMONICS[int(s,2)]))
 
-        mnemonic += Bip39Splitter.MNEMONICS[int(s,2)]
+        mnemonic += Bip39Secret.BIP39_MNEMONICS[int(s,2)]
         self._mnemonic = mnemonic
-        #LOG.info("Init from key : "+hex(self.key)+", mnemonic : "+self.mnemonic)
+        LOG.debug("Init from key : "+hex(self.key)+", mnemonic : "+self.mnemonic)
 
-    def split(self,count = 2):
-        if count < 2: raise Exception("ERROR: Wrong count : "+str(count))
 
-        SPLITTED_P = []
-        L = self.key
-        for i in range(0,count-1):
-            SPLITTED_P.append(secrets.randbelow(2**256))
-            L -= SPLITTED_P[i]
-            L = L % 2**256
-        SPLITTED_P.append(L)
 
-        MNEMONIC_LIST = []
-        for item in SPLITTED_P:
-            MNEMONIC_LIST.append(Bip39Splitter(key=item).mnemonic)
+class Bip39SecretSSSShare(Bip39Secret):
 
-        return MNEMONIC_LIST
+    @property
+    def index(self):
+        if self._index is None: raise Exception("ERROR: No index")
+        return self._index
+
+    @validate_kwargs({ 'exclusive' : [ 'mnemonic','key' ] })
+    def __init__(self, **kwargs):
+        self._index = None
+        if 'mnemonic' in kwargs: self._init_from_mnemonic_with_idx(kwargs.pop('mnemonic'))
+        elif 'key' in kwargs and 'index' in kwargs: self._init_from_key_with_idx(kwargs.pop('key'),kwargs.pop('index'))
+        else: raise Exception("ERROR: Wrong parameters : "+str(kwargs))
+
+    def _init_from_mnemonic_with_idx(self,mnemonic):   
+        if len(mnemonic.split(" "))-1 not in Bip39Secret.MNEMONIC_VALID_LENGTHS: raise Exception("ERROR: Wrong mnemonic length : "+str(mnemonic))
+        s = mnemonic.split(" ")
+        index = int(s[-1])
+        mnemonic = ' '.join(s[:-1])  
+        if index < 1000 or index > 9999: raise Exception("ERROR: Wrong index : "+str(index))
+        self._index = index
+        LOG.debug("Init from mnemonic index : "+str(mnemonic))
+        self._init_from_mnemonic(mnemonic)
+
+    def _init_from_key_with_idx(self,key,index): 
+        if index < 1000 or index > 9999: raise Exception("ERROR: Wrong index : "+str(index))
+        self._index = index
+        LOG.debug("Init from key index : "+str(index))
+        self._init_from_key(key)
+
+
+
+
+class Bip39SecretShare(Bip39Secret):
+    pass
 

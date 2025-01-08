@@ -5,14 +5,15 @@ This code will split a bip39 (english and 24 word only) passphrase into 2 or mor
 
 It is usefull if you don't want to keep the backup in a single location (meaning if compromised you will lost access to your wallet). It can also fool anyone trying to get your passphrase by threat as you can give him access to any of those generated passphrases.
 
-Once splitted in N passphrases, you can keep the generated passphrases in different locations, finding one generated passphrase won't compromise your wallet. You can also fake it is a legit wallet by putting a few $ in crypto inside.
+Once splitted in N passphrases, you can keep the generated passphrases in different physical locations, finding one generated passphrase won't compromise your wallet. You can also fake it is a legit wallet by putting a few $ in crypto inside.
 
-IMPORTANT : To regenerate the original passphrase you need to provide the complete list of generated passphrase. This means losing one of the generated passphrase will cause complete loss of access to your wallet. This is the counterpart to this method to add a layer of security.
+Two algorithm are supported :
 
-split.py : provide your original passphrase and the split count in the code and run it to display the generated passphrases
+Standard : Can split your BIP-39 mnemonic into n mnemonic, ALL generated mnemonic are mandatory to recover the original. If you lose one of the generated mnemonic, you will lose access to your wallet
 
-merge.py : provide the list of splitted passphrases and run it to get original passphrase
+Shamir Secret Sharing : Can split your BIP-39 mnemonic into n mnemonic (with a pin code that can mimick a passphrase) with m mnemonic needed for the recovery (m < n), m generated mnemonic are mandatory to recover the original. This allow the loss of (m-n) menmonic while still being able to recover your wallet
 
-test.*.py : test files for DEV
+mnemonic_splitter.py : Launch the GUI to split and reconstruct the mnemonic
+make.bat : Generate standalone executable in dist/
 
-Technical details : generated passphrases entropy is set using the secrets (generating random secure numbers) python library, the adding of the entropy of generated passphrases (modulus 2**256) will give the original entropy. 
+Technical details : generated passphrases entropy is set using the secrets (generating random secure numbers) python library
