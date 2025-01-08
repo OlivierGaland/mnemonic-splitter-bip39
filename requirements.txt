@@ -1,0 +1,2 @@
+og_log==0.1.2
+ttkbootstrap==1.10.1
