@@ -21,6 +21,8 @@ make.bat : Generate standalone executable in dist/
 
 Technical details : generated passphrases entropy is set using the secrets (generating random secure numbers) python library
 
+Dependancies : pip install og_log ttkbootstrap
+
 GUI Example :
 
 ![image](https://github.com/user-attachments/assets/a40c522f-2593-481b-b221-529c7c507b41)
