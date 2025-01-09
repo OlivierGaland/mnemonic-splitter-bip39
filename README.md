@@ -1,7 +1,9 @@
 # mnemonic-splitter-bip39
 A simple passphrase splitter for BIP39
 
-IMPORTANT : While it is designed to be usable, this software has not been fully tested, consider using it for education purposes until it is seriously audited and tested. A bug or a security flaw could compromise your funds.  
+IMPORTANT : 
+- While it is designed to be usable, this software has not been fully tested, consider using it for education purposes until it is seriously audited and tested. A bug or a security flaw could compromise your funds.
+- Never trust anyone ! If you plan to use this software to secure a real asset wallet, always confirm the application is safe (check the sources or be sure the application has been audited and confirmed safe). 
 
 This code will split a bip39 (english and 24 word only) mnemonic into 2 or more mnemonics (24 words).
 
