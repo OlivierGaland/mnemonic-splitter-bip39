@@ -15,6 +15,10 @@ Standard : Can split your BIP-39 mnemonic into n mnemonic, ALL generated mnemoni
 
 Shamir Secret Sharing : Can split your BIP-39 mnemonic into n mnemonic (with a pin code that can mimick a passphrase) with m mnemonic needed for the recovery (m < n), m generated mnemonic are mandatory to recover the original. This allow the loss of (n-m) menmonic while still being able to recover your wallet
 
+Note : If the provided mnemonics for reconstruction does not meet requirement, the application will provide a passphrase not matching the original one instead of showing an error, this will fool the attacker as he won't know if he has enough share discovered. 
+
+Files :
+
 mnemonic_splitter.py : Launch the GUI to split and reconstruct the mnemonic
 
 make.bat : Generate standalone executable in dist/
