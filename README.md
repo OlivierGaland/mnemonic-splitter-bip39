@@ -19,12 +19,27 @@ mnemonic_splitter.py : Launch the GUI to split and reconstruct the mnemonic
 
 make.bat : Generate standalone executable in dist/
 
+test/ : Several example of class usage in python if you need to customize
+
 Technical details : generated passphrases entropy is set using the secrets (generating random secure numbers) python library
 
 Dependancies : pip install og_log ttkbootstrap
 
-GUI Example :
+GUI Usage :
 
 ![image](https://github.com/user-attachments/assets/a40c522f-2593-481b-b221-529c7c507b41)
 
+Split :
+Launch program (either from python or the standalone executable)
+Select algorithm and share count 
+Fill master mnemonic field (random generate a random one)
+Hit split to create the shares (copy will get all in clipboard, line separated)
+
+Reconstruct : 
+Launch program (either from python or the standalone executable)
+Select algorithm and share count 
+Fill share fields with the share mnemonics (paste will fill all from your clipboard, one mnemonic per line)
+Hit reconstruct to get your mnemonic back
+
+Tested working on windows 64bit
 
