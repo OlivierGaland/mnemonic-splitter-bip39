@@ -30,23 +30,24 @@ GUI Usage :
 ![image](https://github.com/user-attachments/assets/a40c522f-2593-481b-b221-529c7c507b41)
 
 Split :
-Launch program (either from python or the standalone executable)
 
-Select algorithm and share count 
+- Launch program (either from python or the standalone executable)
 
-Fill master mnemonic field (random generate a random one)
+- Select algorithm and share count 
 
-Hit split to create the shares (copy will get all in clipboard, line separated)
+- Fill master mnemonic field (random generate a random one)
+
+- Hit split to create the shares (copy will get all in clipboard, line separated)
 
 Reconstruct : 
-Launch program (either from python or the standalone executable)
 
-Select algorithm and share count 
+- Launch program (either from python or the standalone executable)
 
-Fill share fields with the share mnemonics (paste will fill all from your clipboard, one mnemonic per line)
+- Select algorithm and share count 
 
-Hit reconstruct to get your mnemonic back
+- Fill share fields with the share mnemonics (paste will fill all from your clipboard, one mnemonic per line)
 
+- Hit reconstruct to get your mnemonic back
 
 Tested working on windows 64bit
 
