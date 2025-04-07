@@ -11,13 +11,14 @@ from og_log import LOG,LEVEL
 from src.mnemonic_manager import MnemonicSplitter,MnemonicMerger
 
 MNEMONIC_000 = "seek service rib phone moon refuse chase cave rough annual total virus disagree knife truth math able dog online outer cram rent pull aerobic"
+LANGUAGE_000 = "english"
 PKEY_000 = 0xc31886e3d1c8f968c9a926bc412f977a43ecf77a74480048126bcea3236cab50
 
 def main():
     LOG.info("Start")
     LOG.level(LEVEL.info)
 
-    s = MnemonicSplitter(mnemonic=MNEMONIC_000)
+    s = MnemonicSplitter(mnemonic=MNEMONIC_000,language=LANGUAGE_000)
     s.split(4)
     shares = s.mnemonic_list
 
@@ -36,7 +37,7 @@ def main():
     for s in shares_sample:
         LOG.info("Using share : "+s)
 
-    m = MnemonicMerger(mnemonic_list=shares_sample)
+    m = MnemonicMerger(mnemonic_list=shares_sample,language=LANGUAGE_000)
     m.merge()
     LOG.info("Merged mnemonic : "+m.mnemonic)
     LOG.info("Merged private key : "+hex(m.key))
@@ -50,7 +51,7 @@ def main():
     for s in shares_sample:
         LOG.info("Using share : "+s)
 
-    m = MnemonicMerger(mnemonic_list=shares_sample)
+    m = MnemonicMerger(mnemonic_list=shares_sample,language=LANGUAGE_000)
     m.merge()
     LOG.info("Merged mnemonic : "+m.mnemonic)
     LOG.info("Merged private key : "+hex(m.key))

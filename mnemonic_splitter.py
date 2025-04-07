@@ -3,12 +3,25 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
 import random
+from types import SimpleNamespace
+import unicodedata
 
-from src.bip39 import generate_random_private_key, Bip39Secret
+
+
+from src.bip39 import generate_random_private_key, Bip39Secret, Bip39SecretSSSShare
 from src.mnemonic_manager import MnemonicSplitter, MnemonicMerger
 from src.mnemonic_sss_manager import MnemonicSSSSplitter, MnemonicSSSMerger
+from src.mnemonic_words import MnemonicWords
 
+
+CTX = SimpleNamespace()
 TEXT_WIDGETS_LIST = []
+
+
+# def item_insert_text(item, text, language):
+#     normalized_text = unicodedata.normalize('NFC', text)    if language == "korean" else text
+#     item.insert("1.0", normalized_text)
+    
 
 def update_fields(*args):
     """Met à jour les champs et ajuste les valeurs de n et m selon l'algorithme."""
@@ -119,7 +132,7 @@ def generate_dynamic_text_fields():
     TEXT_WIDGETS_LIST.clear()
     for i in range(n):
         tk.Label(dynamic_text_fields_frame, text=f"Share {i + 1} mnemonic:").grid(row=i, column=0, padx=5, sticky="w")
-        text_widget = tk.Text(dynamic_text_fields_frame, height=2, width=90, wrap=tk.WORD)
+        text_widget = tk.Text(dynamic_text_fields_frame, height=3, width=90, wrap=tk.WORD)
         text_widget.grid(row=i, column=1, padx=5, pady=2)
         TEXT_WIDGETS_LIST.append(text_widget)
 
@@ -132,13 +145,13 @@ def on_split_button_click():
         clear_shares_text_fields()
         m = input_text.get("1.0", tk.END).rstrip("\n")
         if selected_option.get() == "Standard":
-            s = MnemonicSplitter(mnemonic=m)
+            s = MnemonicSplitter(mnemonic=m,language=selected_option_language.get())
             s.split(int(n_value.get()))
             l = s.mnemonic_list
             for i in range(len(l)):
                 TEXT_WIDGETS_LIST[i].insert("1.0", l[i])
         elif selected_option.get() == "Shamir Shared Secret":
-            s = MnemonicSSSSplitter(mnemonic=m)
+            s = MnemonicSSSSplitter(mnemonic=m,language=selected_option_language.get())
             s.split(int(n_value.get()), int(m_value.get()))
             l = s.mnemonic_with_index_list
             for i in range(len(l)):
@@ -153,11 +166,11 @@ def on_merge_button_click():
         on_clear_button_click()
         ml = [w.get("1.0", tk.END).rstrip("\n") for w in TEXT_WIDGETS_LIST if w.get("1.0", tk.END).rstrip("\n") != ""]
         if selected_option.get() == "Standard":
-            s = MnemonicMerger(mnemonic_list=ml)
+            s = MnemonicMerger(mnemonic_list=ml,language=selected_option_language.get())
             s.merge()
             input_text.insert("1.0", s.mnemonic)
         elif selected_option.get() == "Shamir Shared Secret":
-            s = MnemonicSSSMerger(mnemonic_list=ml)
+            s = MnemonicSSSMerger(mnemonic_list=ml,language=selected_option_language.get())
             s.merge()
             input_text.insert("1.0", s.mnemonic)
         else:
@@ -168,7 +181,8 @@ def on_merge_button_click():
 def on_generate_button_click():
     try:
         on_clear_button_click()
-        input_text.insert("1.0", Bip39Secret(key=generate_random_private_key()).mnemonic)
+        input_text.insert("1.0", Bip39Secret(key=generate_random_private_key(),language=selected_option_language.get()).mnemonic)
+        for i in range(len(TEXT_WIDGETS_LIST)): TEXT_WIDGETS_LIST[i].delete("1.0", tk.END)
     except Exception as e:
         Messagebox.show_error("Error : "+str(e))
 
@@ -233,6 +247,46 @@ def on_paste_button_click2():
     if clipboard_text.strip():  # Vérifier si le texte n'est pas vide
         input_text.delete("1.0", tk.END)
         input_text.insert("1.0", clipboard_text)
+        
+
+def update_fields_language(*args):
+    old = CTX.current_language
+    current = selected_option_language.get()
+
+    if old != current:
+        try:
+            mnemonic = input_text.get("1.0", tk.END).rstrip("\n")
+            master = Bip39Secret(key=Bip39Secret(mnemonic=mnemonic,language=old).key,language=current).mnemonic if mnemonic != "" else ""
+
+            shares = []
+            for i in range(len(TEXT_WIDGETS_LIST)):
+                mnemonic = TEXT_WIDGETS_LIST[i].get("1.0", tk.END).rstrip("\n")
+
+                if mnemonic == "":
+                    shares.append("")
+                else:
+                    shamir = ""
+                    if selected_option.get() == "Shamir Shared Secret":
+                        mnemonic, shamir = mnemonic.rsplit(" ", 1)
+                    shares.append((Bip39Secret(key=Bip39Secret(mnemonic=mnemonic,language=old).key,language=current).mnemonic + " " + shamir))
+
+            input_text.delete("1.0", tk.END)
+            input_text.insert("1.0", master)
+
+            for i in range(len(shares)):
+                TEXT_WIDGETS_LIST[i].delete("1.0", tk.END)
+                TEXT_WIDGETS_LIST[i].insert("1.0", shares[i])
+
+            CTX.current_language = current
+
+        except Exception as e:
+            Messagebox.show_error("Error : "+str(e))
+
+
+def update_fields_length(*args):
+    pass   #TODO        
+
+
 
 root = ttk.Window(themename="darkly")
 root.title("Mnemonic Concealer")
@@ -245,17 +299,28 @@ text_frame.pack(pady=5, padx=10)
 
 # Zone de texte et premiers boutons (Random et Clear)
 tk.Label(text_frame, text="Master Mnemonic:").grid(row=0, column=0, padx=5)
-input_text = tk.Text(text_frame, height=2, width=90, wrap=tk.WORD)
+input_text = tk.Text(text_frame, height=3, width=90, wrap=tk.WORD)
 input_text.grid(row=0, column=1, padx=5)
 
 # Premier ensemble de boutons (Random et Clear)
 # Deuxième ensemble de boutons (Copy et Paste) en dessous
 buttons_frame2 = tk.Frame(root)
 buttons_frame2.pack(pady=5, padx=10)
-tk.Button(buttons_frame2, text="Clear", command=on_clear_button_click, width=10).grid(row=0, column=0, padx=5)
-tk.Button(buttons_frame2, text="Copy", command=on_copy_button_click2, width=10).grid(row=0, column=1, padx=5)
-tk.Button(buttons_frame2, text="Paste", command=on_paste_button_click2, width=10).grid(row=0, column=2, padx=5)
-tk.Button(buttons_frame2, text="Random", command=on_generate_button_click, width=10).grid(row=0, column=3, padx=5)
+
+tk.Label(buttons_frame2, text="Language:").grid(row=0, column=0, padx=5)
+selected_option_language = tk.StringVar(value=MnemonicWords.instance().default_language)
+dropdown_language = ttk.OptionMenu(buttons_frame2, selected_option_language, "english", *MnemonicWords.instance().supported_languages, command=update_fields_language)
+dropdown_language.grid(row=0, column=1, padx=5)
+
+tk.Label(buttons_frame2, text="Length:").grid(row=0, column=2, padx=5)
+selected_option_length = tk.StringVar(value='24')
+dropdown_length = ttk.OptionMenu(buttons_frame2, selected_option_length, '24', '24', command=update_fields_length)
+dropdown_length.grid(row=0, column=3, padx=(5,15))
+
+tk.Button(buttons_frame2, text="Clear", command=on_clear_button_click, width=10).grid(row=0, column=4, padx=5)
+tk.Button(buttons_frame2, text="Copy", command=on_copy_button_click2, width=10).grid(row=0, column=5, padx=5)
+tk.Button(buttons_frame2, text="Paste", command=on_paste_button_click2, width=10).grid(row=0, column=6, padx=5)
+tk.Button(buttons_frame2, text="Random", command=on_generate_button_click, width=10).grid(row=0, column=7, padx=5)
 
 separator1 = tk.Frame(root, height=2, bd=1, relief="sunken", bg="gray")
 separator1.pack(fill="x", padx=10, pady=5)
@@ -290,4 +355,6 @@ shuffle_button = tk.Button(buttons_frame, text="Shuffle", command=on_shuffle_but
 shuffle_button.grid(row=0, column=3, padx=5)
 
 update_fields()
+
+CTX.current_language = selected_option_language.get()
 root.mainloop()

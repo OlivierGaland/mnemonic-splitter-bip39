@@ -21,6 +21,7 @@ class MnemonicSSSSplitter():
         return [share.key for share in self.shares]
 
     def __init__(self, **kwargs):
+        self.shares = []
         self.master = Bip39Secret(**kwargs)
 
     @staticmethod
@@ -58,7 +59,7 @@ class MnemonicSSSSplitter():
 
         for secret in points:
             LOG.debug("Share "+str(secret[1])+" : "+hex(secret[0]))
-            self.shares.append(Bip39SecretSSSShare(key=secret[0],index=secret[1]))
+            self.shares.append(Bip39SecretSSSShare(key=secret[0],index=secret[1],language=self.master.language))
 
 
     def verify(self,shares, minimum):
@@ -71,7 +72,7 @@ class MnemonicSSSSplitter():
 
         for permutation in all_permutations_as_lists:
             if len(permutation) > 2:
-                merger = MnemonicSSSMerger(mnemonic_list=permutation)
+                merger = MnemonicSSSMerger(mnemonic_list=permutation,language=self.master.language)
                 merger.merge()
                 if len(permutation) > minimum - 1 and len(permutation) < shares + 1:
                     if merger.key == self.master.key and merger.mnemonic == self.master.mnemonic: continue
@@ -97,16 +98,21 @@ class MnemonicSSSMerger:
     @property
     def key_with_index_list(self):
         return [(share.key,share.index) for share in self.mnemonic_list]
+    
+    @property
+    def language(self):
+        return self._language
 
-    @validate_kwargs({ 'exclusive' : [ 'mnemonic_list'] })
+    @validate_kwargs({ 'mandatory' : [ 'language' ], 'exclusive' : [ 'mnemonic_list'] })
     def __init__(self, **kwargs):
+        self._language = kwargs.pop('language')
         if 'mnemonic_list' in kwargs: self._init_from_mnemonic_list(kwargs.pop('mnemonic_list'))
         else: raise Exception("ERROR: Wrong parameters : "+str(kwargs))
 
     def _init_from_mnemonic_list(self,mnemonic_list):
         self.mnemonic_list = []
         for mnemonic in mnemonic_list:
-            self.mnemonic_list.append(Bip39SecretSSSShare(mnemonic=mnemonic))
+            self.mnemonic_list.append(Bip39SecretSSSShare(mnemonic=mnemonic,language=self.language))
 
     @staticmethod
     def _extended_gcd(a, b):
@@ -172,5 +178,5 @@ class MnemonicSSSMerger:
         if len(self.mnemonic_list) < 3:
             raise Exception("ERROR: Not enough shares to merge : "+str(len(self.mnemonic_list)))
         y_s, x_s = zip(*self.key_with_index_list)
-        self._result = Bip39Secret(key=MnemonicSSSMerger._lagrange_interpolate(0, x_s, y_s, Bip39Secret.SECP256k1_ORDER))
+        self._result = Bip39Secret(key=MnemonicSSSMerger._lagrange_interpolate(0, x_s, y_s, Bip39Secret.SECP256k1_ORDER),language=self.language)
 

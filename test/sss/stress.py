@@ -12,6 +12,7 @@ from src.bip39 import generate_random_private_key
 NB_SHARES = 5
 NB_MINIMAL_SHARES = 3
 COUNT = 100              # 1.5 tps (5,3)
+LANGUAGE_000 = "english"
 
 def main():
 
@@ -21,7 +22,7 @@ def main():
     try:
         for i in range(COUNT):
             LOG.stop()
-            s = MnemonicSSSSplitter(key=generate_random_private_key())
+            s = MnemonicSSSSplitter(key=generate_random_private_key(),language=LANGUAGE_000)
             s.split(NB_SHARES,NB_MINIMAL_SHARES)
             s.verify(NB_SHARES,NB_MINIMAL_SHARES)
             LOG.start()

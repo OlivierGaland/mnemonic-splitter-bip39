@@ -11,6 +11,7 @@ from src.bip39 import generate_random_private_key
 
 NB_SHARES = 5
 COUNT = 100             # 5 tps (5)
+LANGUAGE_000 = "english"
 
 def main():
 
@@ -20,7 +21,7 @@ def main():
     try:
         for i in range(COUNT):
             LOG.stop()
-            s = MnemonicSplitter(key=generate_random_private_key())
+            s = MnemonicSplitter(key=generate_random_private_key(),language=LANGUAGE_000)
             s.split(NB_SHARES)
             s.verify()
             LOG.start()

@@ -36,7 +36,7 @@ class MnemonicSplitter():
         k_list.append(k)
 
         for item in k_list:
-            self.shares.append(Bip39Secret(key=item))
+            self.shares.append(Bip39Secret(key=item,language=self.master.language))
 
 
     def verify(self):
@@ -46,7 +46,7 @@ class MnemonicSplitter():
         all_permutations_as_lists = [list(p) for p in all_permutations]
 
         for permutation in all_permutations_as_lists:
-            merger = MnemonicMerger(mnemonic_list=permutation)
+            merger = MnemonicMerger(mnemonic_list=permutation,language=self.master.language)
             merger.merge()
             if merger.key != self.master.key or merger.mnemonic != self.master.mnemonic:
                 raise Exception("ERROR: Wrong permutation : "+str(permutation))
@@ -65,23 +65,28 @@ class MnemonicMerger():
     def mnemonic(self):
         if self._result is None: raise Exception("ERROR: Not merged yet")
         return self._result.mnemonic
+    
+    @property
+    def language(self):
+        return self._language
 
-    @validate_kwargs({ 'exclusive' : [ 'mnemonic_list'] })
+    @validate_kwargs({ 'mandatory' : [ 'language' ], 'exclusive' : [ 'mnemonic_list'] })
     def __init__(self, **kwargs):
+        self._language = kwargs.pop('language')
         if 'mnemonic_list' in kwargs: self._init_from_mnemonic_list(kwargs.pop('mnemonic_list'))
         else: raise Exception("ERROR: Wrong parameters : "+str(kwargs))
 
     def _init_from_mnemonic_list(self,mnemonic_list):
         self.mnemonic_list = []
         for mnemonic in mnemonic_list:
-            self.mnemonic_list.append(Bip39SecretShare(mnemonic=mnemonic))
+            self.mnemonic_list.append(Bip39SecretShare(mnemonic=mnemonic,language=self.language))
 
     def merge(self):
         key = 0x0
         for item in self.mnemonic_list:
             key += item.key
             key = key % Bip39Secret.SECP256k1_ORDER
-        self._result = Bip39Secret(key=key)
+        self._result = Bip39Secret(key=key,language=self.language)
 
 
 
