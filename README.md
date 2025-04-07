@@ -33,13 +33,13 @@ Dependancies : pip install og_log ttkbootstrap
 
 GUI Usage :
 
-![image](https://github.com/user-attachments/assets/a40c522f-2593-481b-b221-529c7c507b41)
+![image](https://github.com/user-attachments/assets/6a1e3889-9d27-4426-80ee-cb20669e332f)
 
 Split :
 
 - Launch program (either from python or the standalone executable)
 
-- Select algorithm and share count 
+- Select language, algorithm and share count 
 
 - Fill master mnemonic field (random generate a random one)
 
@@ -49,11 +49,16 @@ Reconstruct :
 
 - Launch program (either from python or the standalone executable)
 
-- Select algorithm and share count 
+- Select language, algorithm and share count 
 
 - Fill share fields with the share mnemonics (paste will fill all from your clipboard, one mnemonic per line)
 
 - Hit reconstruct to get your mnemonic back
+
+Miscellaneous :
+
+- Multi-language : you can use the language button to convert a mnemonic from one language to another
+- Length : not implemented yet (only 24 words currently) 
 
 Tested working on windows 64bit
 
